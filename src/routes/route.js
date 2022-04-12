@@ -6,7 +6,7 @@ const userController = require('../controller/userController');
 
 
 // User Api
-router.post('/register', userController.createUser);
+router.post('/register', userController.registerUser);
 
 
 module.exports = router;
