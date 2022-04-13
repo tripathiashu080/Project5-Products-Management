@@ -9,6 +9,7 @@ const productController = require('../controller/productController');
 // User Api
 router.post('/register', userController.registerUser);
 router.post('/login', userController.loginUser);
+router.get('/user/:userId/profile', userController.getUser);
 router.put('/user/:userId/profile', userController.updateProfile);
 // product api
 router.post('/products', productController.createProduct);
