@@ -2,44 +2,12 @@ const userModel = require("../models/userModel")
 const aws= require("aws-sdk")
 const bcrypt=require("bcrypt")
 const jwt=require("jsonwebtoken")
+const validator = require("../validator/validator")
+const awsConnection = require("../configs/awsConnection.js")
+const setEncription = require("../configs/encription.js")
 saltRounds=10;
-const isValid = function (value) {
-  if (typeof (value) === 'undefined' || typeof (value) === 'null') {
-    return false
-  }
-  if (typeof (value) === 'string' && value.trim().length > 0) {
-    return true
-  }
-}
 
-
-aws.config.update(
-    {
-        accessKeyId: "AKIAY3L35MCRVFM24Q7U",
-        secretAccessKey: "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",
-        region: "ap-south-1"
-    }
-)
-let uploadFile = async (file) => {
-    return new Promise(function (resolve, reject) {
-        let s3 = new aws.S3({ apiVersion: "2006-03-01" })
-        var uploadParams = {
-            ACL: "public-read",
-            Bucket: "classroom-training-bucket",
-            Key: "gaurav/" + file.originalname,
-            Body: file.buffer
-        }
-        console.log(uploadFile)
-        s3.upload(uploadParams, function (err, data) {
-            if (err) {
-                return reject({ "error": err })
-            }
-            return resolve(data.Location)
-        }
-        )
-    }
-    )
-}
+// register user
 
 
 const registerUser = async function (req, res) {
@@ -48,19 +16,17 @@ const registerUser = async function (req, res) {
         const files = req.files
         if (Object.keys(userData).length = 0) { return res.status(400).send({ status: "false", message: "Please ptovide required input fields" }) }
         let { fname, lname, email, phone, password, address } = userData
-        if (!isValid(fname)) { return res.status(400).send({ status: "false", message: "Please enter first name" }) }
-        if (!isValid(lname)) { return res.status(400).send({ status: "false", message: "Please enter last name" }) }
-        if (!isValid(email)) { return res.status(400).send({ status: "false", message: "Please enter email" }) }
+        if (!validator.isValid(fname)) { return res.status(400).send({ status: "false", message: "Please enter first name" }) }
+        if (!validator.isValid(lname)) { return res.status(400).send({ status: "false", message: "Please enter last name" }) }
+        if (!validator.isValid(email)) { return res.status(400).send({ status: "false", message: "Please enter email" }) }
 
-        if (!/^\w+([\.-]?\w+)@\w+([\.-]?\w+)(\.\w{2,3})+$/.test(email)) {
-            return res.status(400).send({ status: false, message: `Email should be a valid email address` });
-        }
+        if (!validator.isValidEmail(email)) return res.status(400).send({ status: false, message: ` Email should be valid email` })
         let duplicateEmail = await userModel.findOne({ email: email })
         if (duplicateEmail) {
             return res.status(400).send({ status: false, message: `Email Already Present` });
         }
 
-        if (!isValid(phone)) {
+        if (!validator.isValid(phone)) {
             return res.status(400).send({ status: false, message: "Invalid request parameter, please provide Phone" });
         }
         if (!/^(?:(?:\+|0{0,2})91(\s*[\-]\s*)?|[0]?)?[6789]\d{9}$/.test(phone)) {
@@ -70,7 +36,7 @@ const registerUser = async function (req, res) {
         if (duplicatePhone) {
             return res.status(400).send({ status: false, message: `Phone Number Already Present` });
         }
-        if (!isValid(password.trim())) { return res.status(400).send({ status: "false", message: "Please enter a valid password" }) }
+        if (!validator.isValid(password.trim())) { return res.status(400).send({ status: "false", message: "Please enter a valid password" }) }
         if (!(password.length >= 8 && password.length <= 15)) {
             return res.status(400).send({ status: false, message: "Password should be Valid min 8 and max 15 " });
         }
@@ -83,18 +49,18 @@ const registerUser = async function (req, res) {
         if (shipping) {
             let { street, city, pincode } = shipping
             if (street) {
-                if (!isValid(street)) {
+                if (!validator.isValid(street)) {
                     return res.status(400).send({ status: false, message: 'Shipping Street Required' });
                 }
             }
 
             if (city) {
-                if (!isValid(city)) {
+                if (!validator.isValid(city)) {
                     return res.status(400).send({ status: false, message: 'Shipping city is Required' });
                 }
             }
             if (pincode) {
-                if (!isValid(pincode)) {
+                if (!validator.isValid(pincode)) {
                     return res.status(400).send({ status: false, message: 'Shipping pincode Required' });
                 }
             }
@@ -104,27 +70,25 @@ const registerUser = async function (req, res) {
         if (billing) {
             let { street, city, pincode } = billing
             if (street) {
-                if (!isValid(street)) {
+                if (!validator.isValid(street)) {
                     return res.status(400).send({ status: false, message: 'billing Street Required' })
                 }
             }
             if (city) {
-                if (!isValid(city)) {
+                if (!validator.isValid(city)) {
                     return res.status(400).send({ status: false, message: 'Shipping city is Required' });
                 }
             }
             if (pincode) {
-                if (!isValid(pincode)) {
+                if (!validator.isValid(pincode)) {
                     return res.status(400).send({ status: false, message: 'Shipping pincode Required' });
                 }
             }
         } else {
             return res.status(400).send({ status: false, message: "Invalid request parameters, billing address cannot be empty" })
         }
-        if (files && files.length > 0) {
-            profileImage = await uploadFile(files[0])
-        }
-        else { return res.status(400).send({ message: "No file found" }) }
+        const profileImage = await awsConnection.uploadProfileImage(req.files)
+        if (!profileImage) return res.status(400).send({ status: false, message: "there is an error to upload profile image. for more details move on console" })
         const hash = await bcrypt.hash(password, saltRounds)
         const updatedData = {
             "fname": fname,
@@ -143,6 +107,7 @@ const registerUser = async function (req, res) {
     }
 }
 
+// login user
 
 const loginUser = async (req, res) => {
     try {
@@ -176,6 +141,37 @@ const loginUser = async (req, res) => {
 };
 
 
+// get user
+
+const getUser = async function (req, res) {
+    try {
+
+
+        if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
+        if (validator.isValidRequestBody(req.body)) return res.status(400).send({ status: false, msg: "can not pass request body. body is blocked" })
+        const userId = req.params.userId
+
+
+        if (!validator.isObjectId(userId)) return res.status(400).send({ status: false, msg: "you can pass only object id in path params" })
+
+
+        const userData = await userModel.findById(userId)
+        if (!userData) return res.status(404).send({ status: false, msg: "no data found" })
+
+
+        return res.status(200).send({ status: true, msg: "data found successfully", data: userData })
+
+
+    }
+    catch (err) {
+        console.log(err)
+        return res.status(500).send({ status: false, error: err.message, msg: "more details move on console", })
+    }
+
+}
+
+
+//update user
 
 const updateProfile = async function (req, res) {
     try {
@@ -185,7 +181,7 @@ const updateProfile = async function (req, res) {
 
 
         const requestBody = req.body
-        if (!validator.isValidRequestBody(requestBody)) return res.status(400).send({ status: false, msg: "please provide user updation details in form data of request body" })
+        if (!validator.isValid(requestBody)) return res.status(400).send({ status: false, msg: "please provide user updation details in form data of request body" })
         let { fname, lname, email, phone, password, address } = requestBody
 
 
@@ -195,7 +191,7 @@ const updateProfile = async function (req, res) {
 
         if ('fname' in req.body) {
 
-            if (!validator.isValidRequestValue(fname)) return res.status(400).send({ status: false, message: ` Key Name : 'fname' You can pass only a to z OR A to Z. Make sure you can not pass only key name or a blank key` })
+            if (!validator.isValid(fname)) return res.status(400).send({ status: false, message: ` Key Name : 'fname' You can pass only a to z OR A to Z. Make sure you can not pass only key name or a blank key` })
             if (!validator.isStrictString(fname)) return res.status(400).send({ status: false, message: ` Key Name : 'fname' You can pass only a to z OR A to Z. Make sure you can not pass only key name or a blank key` })
 
 
@@ -208,7 +204,7 @@ const updateProfile = async function (req, res) {
         if ('lname' in req.body) {
 
 
-            if (!validator.isValidRequestValue(lname)) return res.status(400).send({ status: false, message: ` Key Name : 'lname' You can pass only a to z OR A to Z. Make sure you can not pass only key name or a blank key` })
+            if (!validator.isValid(lname)) return res.status(400).send({ status: false, message: ` Key Name : 'lname' You can pass only a to z OR A to Z. Make sure you can not pass only key name or a blank key` })
             if (!validator.isStrictString(lname)) return res.status(400).send({ status: false, message: ` Key Name : 'lname' You can pass only a to z OR A to Z. Make sure you can not pass only key name or a blank key` })
 
 
@@ -221,7 +217,7 @@ const updateProfile = async function (req, res) {
         if ('email' in req.body) {
 
 
-            if (!validator.isValidRequestValue(email)) return res.status(400).send({ status: false, message: ` Key Name : 'email' You can pass only a valid email. Make sure you can not pass only key name or a blank key` })
+            if (!validator.isValid(email)) return res.status(400).send({ status: false, message: ` Key Name : 'email' You can pass only a valid email. Make sure you can not pass only key name or a blank key` })
             if (!validator.isValidEmail(email)) return res.status(400).send({ status: false, message: ` Key Name : 'email' You can pass only a valid email. Make sure you can not pass only key name or a blank key` })
 
 
@@ -251,7 +247,7 @@ const updateProfile = async function (req, res) {
         if ('phone' in req.body) {
 
 
-            if (!validator.isValidRequestValue(phone)) return res.status(400).send({ status: false, message: ` Key Name : 'phone' You can pass only a valid Indian Mobile No. Make sure you can not pass only key name or a blank key` })
+            if (!validator.isValid(phone)) return res.status(400).send({ status: false, message: ` Key Name : 'phone' You can pass only a valid Indian Mobile No. Make sure you can not pass only key name or a blank key` })
             if (!validator.isValidPhone(phone)) return res.status(400).send({ status: false, message: ` Key Name : 'phone' You can pass only a valid Indian Mobile No. Make sure you can not pass only key name or a blank key` })
 
 
@@ -268,7 +264,7 @@ const updateProfile = async function (req, res) {
         if ('password' in req.body) {
 
 
-            if (!validator.isValidRequestValue(password)) return res.status(400).send({ status: false, message: ` Key Name : 'password' You can pass only a valid password more than 8 character and less than 15 character. Make sure you can not pass only key name or a blank key` })
+            if (!validator.isValid(password)) return res.status(400).send({ status: false, message: ` Key Name : 'password' You can pass only a valid password more than 8 character and less than 15 character. Make sure you can not pass only key name or a blank key` })
             if (!validator.isValidPassword(password)) return res.status(400).send({ status: false, message: ` Key Name : 'password' You can pass only a valid password more than 8 character and less than 15 character. Make sure you can not pass only key name or a blank key` })
             const encryptedPassword = await setEncription.setEncription(password)
 
@@ -308,7 +304,7 @@ const updateProfile = async function (req, res) {
 
 
                 if ('street' in shipping) {
-                    if (!validator.isValidRequestValue(street)) return res.status(400).send({ status: false, msg: "please provide 'street' key in billing address. Make sure you can not pass only key name or a blank key" })
+                    if (!validator.isValid(street)) return res.status(400).send({ status: false, msg: "please provide 'street' key in billing address. Make sure you can not pass only key name or a blank key" })
 
 
                     if (!('$set' in updateUserData)) updateUserData["$set"] = {};
@@ -320,7 +316,7 @@ const updateProfile = async function (req, res) {
                 if ('city' in shipping) {
 
 
-                    if (!validator.isValidRequestValue(city)) return res.status(400).send({ status: false, msg: "please provide 'city' key in shipping address. Make sure you can not pass only key name or a blank key" })
+                    if (!validator.isValid(city)) return res.status(400).send({ status: false, msg: "please provide 'city' key in shipping address. Make sure you can not pass only key name or a blank key" })
                     if (!validator.isStrictString(city)) return res.status(400).send({ status: false, message: ` Key Name : 'city' You can pass only a to z OR A to Z. Make sure you can not pass only key name or a blank key` })
 
 
@@ -332,8 +328,8 @@ const updateProfile = async function (req, res) {
 
 
                 if ('pincode' in shipping) {
-                    if (!validator.isValidRequestValue(pincode)) return res.status(400).send({ status: false, message: ` Key Name : 'pincode' You can pass only 0 to 9 digit. Make sure you can not pass only key name or a blank key or starting from 0` })
-                    if (!validator.isValidPincode(pincode)) return res.status(400).send({ status: false, message: ` Key Name : 'pincode' You can pass only 0 to 9 digit. Make sure you can not pass only key name or a blank key or starting from 0` })
+                     if (!validator.isValid(pincode)) return res.status(400).send({ status: false, message: ` Key Name : 'pincode' You can pass only 0 to 9 digit. Make sure you can not pass only key name or a blank key or starting from 0` })
+                     if (!validator.isValidPincode(pincode)) return res.status(400).send({ status: false, message: ` Key Name : 'pincode' You can pass only 0 to 9 digit. Make sure you can not pass only key name or a blank key or starting from 0` })
 
 
                     if (!('$set' in updateUserData)) updateUserData["$set"] = {};
@@ -354,7 +350,7 @@ const updateProfile = async function (req, res) {
                 if ('street' in shipping) {
 
 
-                    if (!validator.isValidRequestValue(street)) return res.status(400).send({ status: false, msg: "please provide 'street' key in billing address. Make sure you can not pass only key name or a blank key" })
+                    if (!validator.isValid(street)) return res.status(400).send({ status: false, msg: "please provide 'street' key in billing address. Make sure you can not pass only key name or a blank key" })
 
 
                     if (!('$set' in updateUserData)) updateUserData["$set"] = {};
@@ -367,7 +363,7 @@ const updateProfile = async function (req, res) {
                 if ('city' in shipping) {
 
 
-                    if (!validator.isValidRequestValue(city)) return res.status(400).send({ status: false, msg: "please provide 'city' key in billing address. Make sure you can not pass only key name or a blank key" })
+                    if (!validator.isValid(city)) return res.status(400).send({ status: false, msg: "please provide 'city' key in billing address. Make sure you can not pass only key name or a blank key" })
                     if (!validator.isStrictString(city)) return res.status(400).send({ status: false, message: ` Key Name : 'city' You can pass only a to z OR A to Z. Make sure you can not pass only key name or a blank key` })
 
                     if (!('$set' in updateUserData)) updateUserData["$set"] = {};
@@ -380,7 +376,7 @@ const updateProfile = async function (req, res) {
                 if ('pincode' in shipping) {
 
 
-                    if (!validator.isValidRequestValue(pincode)) return res.status(400).send({ status: false, message: ` Key Name : 'pincode' You can pass only 0 to 9 digit. Make sure you can not pass only key name or a blank key or starting from 0` })
+                     if (!validator.isValid(pincode)) return res.status(400).send({ status: false, message: ` Key Name : 'pincode' You can pass only 0 to 9 digit. Make sure you can not pass only key name or a blank key or starting from 0` })
                     if (!validator.isValidPincode(pincode)) return res.status(400).send({ status: false, message: ` Key Name : 'pincode' You can pass only 0 to 9 digit. Make sure you can not pass only key name or a blank key or starting from 0` })
 
 
@@ -407,4 +403,4 @@ const updateProfile = async function (req, res) {
 
 }
 
-module.exports={registerUser,loginUser,updateProfile}
+module.exports={registerUser,loginUser,getUser,updateProfile}
