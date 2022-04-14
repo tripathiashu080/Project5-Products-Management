@@ -5,7 +5,7 @@ const validator = require("../validator/validator.js")
 const awsConnection = require("../configs/awsConnection.js")
 const bcrypt=require("bcrypt")
 saltRounds=10;
-
+cd
 
 
 const createProduct = async function (req, res) {
