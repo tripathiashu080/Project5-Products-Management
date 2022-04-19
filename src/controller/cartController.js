@@ -1,6 +1,6 @@
 const cartModel = require("../models/cartModel")
 const productModel = require("../models/productModel")
-const validator = require("../validator/validator.js")
+const validator = require("../validator/validator")
 
 
 
@@ -212,7 +212,7 @@ const removeProductFromCart = async function (req, res) {
         const items = req.body
         const { productId, removeProduct } = items
 
-
+        console.log(productId)
         if (!validator.isValid(productId)) return res.status(400).send({ status: false, message: ` Key Name : 'productId' You can pass only a valid ObjectId. Make sure you can not pass only key name or a blank key` })
         if (!validator.isObjectId(productId)) return res.status(400).send({ status: false, msg: "you can pass only object id in product id" })
 
@@ -229,7 +229,7 @@ const removeProductFromCart = async function (req, res) {
 
 
         // if customer want to reduce our total price only than we have to check isDeleted with check product exist or not
-
+          
         const isProductExist = await productModel.findOne({ _id: productId, isDeleted: false })
         if (!isProductExist) return res.status(404).send({ status: false, message: "Product Doesn't Exist" })
 
@@ -384,7 +384,7 @@ const deleteUserCart = async function (req, res) {
 
 
         const saveCartData = await cartModel.findOneAndUpdate({ userId: req.params.userId }, saveCart, { new: true })
-        console.log(saveCartData, "saveCartData")
+        //console.log(saveCartData, "saveCartData")
         return res.status(204).send({ status: true, message: "Cart is deleted", data: saveCartData })
 
 

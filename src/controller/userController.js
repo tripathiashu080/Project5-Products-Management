@@ -5,6 +5,7 @@ const jwt=require("jsonwebtoken")
 const validator = require("../validator/validator")
 const awsConnection = require("../configs/awsConnection.js")
 const setEncription = require("../configs/encription.js")
+const generateToken=require("../middleware/genrateToken")
 saltRounds=10;
 
 // register user
@@ -29,14 +30,12 @@ const registerUser = async function (req, res) {
         if (!validator.isValid(phone)) {
             return res.status(400).send({ status: false, message: "Invalid request parameter, please provide Phone" });
         }
-        if (!/^(?:(?:\+|0{0,2})91(\s*[\-]\s*)?|[0]?)?[6789]\d{9}$/.test(phone)) {
-            return res.status(400).send({ status: false, message: `Mobile should be a valid number` });
-        }
+        if (!validator.isValidEmail(email)) return res.status(400).send({ status: false, message: ` phone number  should be valid phone number` })
         let duplicatePhone = await userModel.findOne({ phone: phone })
         if (duplicatePhone) {
             return res.status(400).send({ status: false, message: `Phone Number Already Present` });
         }
-        if (!validator.isValid(password.trim())) { return res.status(400).send({ status: "false", message: "Please enter a valid password" }) }
+        if (!validator.isValid(password.trim())) { return res.status(400).send({ status: "false", message: "Please enter a  password" }) }
         if (!(password.length >= 8 && password.length <= 15)) {
             return res.status(400).send({ status: false, message: "Password should be Valid min 8 and max 15 " });
         }
@@ -109,36 +108,54 @@ const registerUser = async function (req, res) {
 
 // login user
 
-const loginUser = async (req, res) => {
+const loginUser = async function (req, res) {
     try {
-        const gEmail = req.body.email
-        const gPassword = req.body.password
-        let user = await userModel.findOne({ email: gEmail });
-        if (user) {
-            
-            const valPassword = await bcrypt.compare(gPassword, user.password);
-            if (!valPassword) {
-                return res.status(400).send({ message: "Invalid Password" })
-            }
-            let payload = { userId: user._id, email: gEmail };
-            const generatedToken = jwt.sign(payload, "room13key", { expiresIn: '10080m' });
-            
-            res.setHeader["authorisation",generatedToken]
-            return res.status(200).send({
-                status: true,
-                message:  " you have logged in Succesfully",
-                data: {
-                    userId: user._id,
-                    token: generatedToken,
-                }
-            });
-        } else {
-            return res.status(400).send({ status: false, message: "invalid userid or pwd" });
-        }
-    } catch (error) {
-        return res.status(500).send({ status: false, message: error.message });
+
+
+        const requestBody = req.body
+       // if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
+       // if (!validator.isValidRequestBody(requestBody)) return res.status(400).send({ status: false, msg: "please provide login user details in request body" })
+
+
+        if (Object.keys(requestBody).length > 2) return res.status(400).send({ status: false, msg: "you can pass only two keys in request body" })
+        const { email, password } = requestBody
+
+
+        if (!validator.isValid(email)) return res.status(400).send({ status: false, message: ` Key Name : 'email' You can pass only a valid email. Make sure you can not pass only key name or a blank key` })
+        if (!validator.isValidEmail(email)) return res.status(400).send({ status: false, message: ` Key Name : 'email' You can pass only a valid email. Make sure you can not pass only key name or a blank key` })
+        const user = await userModel.findOne({ email })
+        if (!user) return res.status(404).send({ status: false, message: ` Key Name : 'email' Your email is not found ` })
+        //console.log("user" , user)
+
+
+        if (!validator.isValid(password)) return res.status(400).send({ status: false, message: ` Key Name : 'password' You can pass only a valid password more than 8 character and less than 15 character. Make sure you can not pass only key name or a blank key` })
+        if (!validator.isValidPassword(password)) return res.status(400).send({ status: false, message: ` Key Name : 'password' You can pass only a valid password more than 8 character and less than 15 character. Make sure you can not pass only key name or a blank key` })
+
+
+        const matchPassword = await setEncription.matchEncription(password, user.password)
+        if (!matchPassword) return res.status(404).send({ status: false, message: ` Key Name : 'password' Your password not match try again` })
+
+
+        const tokenWithId = await generateToken.generateToken(user)
+        if (!tokenWithId) return res.status(404).send({ status: false, message: "There is an error occure to generate token. more details move on console" })
+
+
+        res.setHeader('authorization', tokenWithId.token)
+        console.log("Security details", tokenWithId)
+
+
+        return res.status(200).send({ status: true, msg: `User login successfully`, data: tokenWithId })
+
+
     }
-};
+    catch (err) {
+        console.log(err)
+        return res.status(500).send({ status: false, error: err.message, msg: "more details move on console", })
+    }
+
+}
+
+
 
 
 // get user
