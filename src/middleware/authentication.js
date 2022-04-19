@@ -27,7 +27,7 @@ const authentication = async function (req, res, next) {
     } catch (err) {
 
 
-        if (err.message == "invalid token") return res.status(401).send({ status: false, msg: "authentication failed May be your hadder part currupt" }) // failed ka 401 ?
+        if (err.message == "invalid token") return res.status(401).send({ status: false, msg: "authentication failed May be your header part currupt" }) // failed ka 401 ?
         if (err.message.startsWith("Unexpected")) return res.status(401).send({ status: false, msg: "authentication failed May be your payload part currupt" }) // failed ka 401 ?
         if (err.message == "invalid signature") return res.status(401).send({ status: false, msg: "authentication failed May be your singature part currupt" }) // failed ka 401 ?
         if (err.message == "jwt expired") return res.status(401).send({ status: false, msg: "authentication failed May be your Token is Expired" }) // failed ka 401 ?
