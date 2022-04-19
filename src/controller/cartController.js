@@ -11,7 +11,7 @@ const addToCart = async function (req, res) {
     try {
 
 
-        if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
+      //  if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
 
 
         const suggestionData = [{ "productId": "62556bc926c7f67d579eb459", "quantity": 2 }]
@@ -195,7 +195,7 @@ const removeProductFromCart = async function (req, res) {
     try {
 
 
-        if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
+       // if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
 
 
         let isCartExist = await cartModel.findOne({ userId: req.params.userId })

@@ -115,7 +115,7 @@ const getProductByFilter = async (req, res) => {
     try {
 
 
-        if (validator.isValidRequestBody(req.body)) return res.status(400).send({ status: false, msg: "can not pass request body. body is blocked" })
+       // if (validator.isValidRequestBody(req.body)) return res.status(400).send({ status: false, msg: "can not pass request body. body is blocked" })
 
 
 
@@ -301,8 +301,8 @@ const getProductById = async function (req, res) {
     try {
 
 
-        if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
-        if (validator.isValidRequestBody(req.body)) return res.status(400).send({ status: false, msg: "can not pass request body. body is blocked" })
+       // if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
+        //if (validator.isValidRequestBody(req.body)) return res.status(400).send({ status: false, msg: "can not pass request body. body is blocked" })
 
 
         const productId = req.params.productId
@@ -340,7 +340,7 @@ const updateProduct = async function (req, res) {
     try {
 
 
-        if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
+       // if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
         const productId = req.params.productId
         if (!validator.isObjectId(productId)) return res.status(400).send({ status: false, msg: "you can pass only object id in path params" })
 
@@ -560,8 +560,8 @@ const deleteProduct = async function (req, res) {
     try {
 
 
-        if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
-        if (validator.isValidRequestBody(req.body)) return res.status(400).send({ status: false, msg: "can not pass request body. body is blocked" })
+        // if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
+        // if (validator.isValidRequestBody(req.body)) return res.status(400).send({ status: false, msg: "can not pass request body. body is blocked" })
 
 
         const productId = req.params.productId
