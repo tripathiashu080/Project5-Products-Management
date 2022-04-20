@@ -45,7 +45,7 @@ const createOrder= async function(req,res){
     }
 
 
-    let orderBody ={userId:uId,items,totalPrice,totalItems,totalQuantity,cancellable,status,deletedAt:delDate}
+    let orderBody ={userId:uId,items,totalPrice,totalItems,totalQuantity,cancellable,status,deletedAt:delDate,isDeleted}
     
 
     let orderCreated =await orderModel.create(orderBody)
