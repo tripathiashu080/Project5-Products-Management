@@ -15,7 +15,7 @@ const registerUser = async function (req, res) {
     try {
         const userData = req.body
         const files = req.files
-        if (Object.keys(userData).length = 0) { return res.status(400).send({ status: "false", message: "Please ptovide required input fields" }) }
+        if (!validator.isValidRequestBody(userData)) return res.status(400).send({ status: false, msg: "please provide user updation details in form data of request body" })
         let { fname, lname, email, phone, password, address } = userData
         if (!validator.isValid(fname)) { return res.status(400).send({ status: "false", message: "Please enter first name" }) }
         if (!validator.isValid(lname)) { return res.status(400).send({ status: "false", message: "Please enter last name" }) }
@@ -30,7 +30,7 @@ const registerUser = async function (req, res) {
         if (!validator.isValid(phone)) {
             return res.status(400).send({ status: false, message: "Invalid request parameter, please provide Phone" });
         }
-        if (!validator.isValidEmail(email)) return res.status(400).send({ status: false, message: ` phone number  should be valid phone number` })
+        if (!validator.isValidPhone(phone)) return res.status(400).send({ status: false, message: ` phone number  should be valid phone number` })
         let duplicatePhone = await userModel.findOne({ phone: phone })
         if (duplicatePhone) {
             return res.status(400).send({ status: false, message: `Phone Number Already Present` });
@@ -39,52 +39,18 @@ const registerUser = async function (req, res) {
         if (!(password.length >= 8 && password.length <= 15)) {
             return res.status(400).send({ status: false, message: "Password should be Valid min 8 and max 15 " });
         }
+        if (Object.keys(address).length = 0) {
+            return res.status(400).send({ status: false, message: "Address is required" });
+          }
        address = JSON.parse(address)
-       if (Object.keys(address).length = 0) {
-          return res.status(400).send({ status: false, message: "Address is required" });
+       
+        if(!address.shipping||(address.shipping&&(!address.shipping.street||!address.shipping.city||!address.shipping.pincode)))
+        {
+            return res.status(400).send({ status: false, message: " Shipping address is required" });
         }
-
-        let { shipping, billing } = address
-        if (shipping) {
-            let { street, city, pincode } = shipping
-            if (street) {
-                if (!validator.isValid(street)) {
-                    return res.status(400).send({ status: false, message: 'Shipping Street Required' });
-                }
-            }
-
-            if (city) {
-                if (!validator.isValid(city)) {
-                    return res.status(400).send({ status: false, message: 'Shipping city is Required' });
-                }
-            }
-            if (pincode) {
-                if (!validator.isValid(pincode)) {
-                    return res.status(400).send({ status: false, message: 'Shipping pincode Required' });
-                }
-            }
-        } else {
-            return res.status(400).send({ status: false, message: "Invalid request parameters, Shipping address cannot be empty" })
-        }
-        if (billing) {
-            let { street, city, pincode } = billing
-            if (street) {
-                if (!validator.isValid(street)) {
-                    return res.status(400).send({ status: false, message: 'billing Street Required' })
-                }
-            }
-            if (city) {
-                if (!validator.isValid(city)) {
-                    return res.status(400).send({ status: false, message: 'Shipping city is Required' });
-                }
-            }
-            if (pincode) {
-                if (!validator.isValid(pincode)) {
-                    return res.status(400).send({ status: false, message: 'Shipping pincode Required' });
-                }
-            }
-        } else {
-            return res.status(400).send({ status: false, message: "Invalid request parameters, billing address cannot be empty" })
+        if(!address.billing||(address.billing&&(!address.billing.street||!address.billing.city||!address.billing.pincode)))
+        {
+            return res.status(400).send({ status: false, message: " Billing address is required" });
         }
         const profileImage = await awsConnection.uploadProfileImage(req.files)
         if (!profileImage) return res.status(400).send({ status: false, message: "there is an error to upload profile image. for more details move on console" })
@@ -113,9 +79,6 @@ const loginUser = async function (req, res) {
 
 
         const requestBody = req.body
-       // if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
-       // if (!validator.isValidRequestBody(requestBody)) return res.status(400).send({ status: false, msg: "please provide login user details in request body" })
-
 
         if (Object.keys(requestBody).length > 2) return res.status(400).send({ status: false, msg: "you can pass only two keys in request body" })
         const { email, password } = requestBody
@@ -196,9 +159,9 @@ const updateProfile = async function (req, res) {
 
         //if (validator.isValidRequestBody(req.query)) return res.status(400).send({ status: false, msg: "can not pass request query. query is blocked" })
 
-
+     
         const requestBody = req.body
-        if (!validator.isValid(requestBody)) return res.status(400).send({ status: false, msg: "please provide user updation details in form data of request body" })
+        if (!validator.isValidRequestBody(requestBody)) return res.status(400).send({ status: false, msg: "please provide user updation details in form data of request body" })
         let { fname, lname, email, phone, password, address } = requestBody
 
 

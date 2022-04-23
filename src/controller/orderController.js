@@ -23,7 +23,7 @@ const createOrder= async function(req,res){
 
     let findCart=await cartModel.findOne({userId:uId})
     if(!findCart){
-        return  res.status(400).send({status:false,message:"no cart found from userID "})
+        return  res.status(404).send({status:false,message:"no cart found from userID "})
     }
     // you can select particular elements form findCart if you Want 
 

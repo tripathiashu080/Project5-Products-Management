@@ -40,7 +40,7 @@ const isObjectId = function (ObjectId) {
     
     const isValidPassword = function (password) {
         password = password.trim()
-        if (password.length > 7 && password.length < 16) return true
+        if (password.length > 8 && password.length < 16) return true
         return false
     }
 
